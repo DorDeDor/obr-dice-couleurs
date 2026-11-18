@@ -1,0 +1,34 @@
+diff --git a/src/controls/DiceRollControls.tsx b/src/controls/DiceRollControls.tsx
+index ecb2efc..e5de431 100644
+--- a/src/controls/DiceRollControls.tsx
++++ b/src/controls/DiceRollControls.tsx
+@@ -20,7 +20,6 @@ import { GradientOverlay } from "./GradientOverlay";
+ import { useDiceRollStore } from "../dice/store";
+ import { DiceResults } from "./DiceResults";
+ import { getDiceToRoll, useDiceControlsStore } from "./store";
+-import { DiceType } from "../types/DiceType";
+ import { useDiceHistoryStore } from "./history";
+ import { Die } from "../types/Die";
+ 
+@@ -43,8 +42,8 @@ export function DiceRollControls() {
+   // Is currently the default dice state (all counts 0 and advantage/bonus defaults)
+   const isDefault = useMemo(
+     () =>
+-      Object.entries(defaultDiceCounts).every(
+-        ([type, count]) => counts[type as DiceType] === count
++      Object.entries(counts).every(
++        ([id, count]) => (defaultDiceCounts[id] ?? 0) === count
+       ) &&
+       advantage === null &&
+       bonus === 0,
+@@ -153,8 +152,8 @@ function DicePickedControls() {
+ 
+   const hasDice = useMemo(
+     () =>
+-      !Object.entries(defaultDiceCounts).every(
+-        ([type, count]) => counts[type as DiceType] === count
++      !Object.entries(counts).every(
++        ([id, count]) => (defaultDiceCounts[id] ?? 0) === count
+       ),
+     [counts, defaultDiceCounts]
+   );
