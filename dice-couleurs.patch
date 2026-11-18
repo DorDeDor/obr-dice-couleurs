@@ -1,0 +1,577 @@
+diff --git a/public/manifest.json b/public/manifest.json
+index 4e3be6a..7125e97 100644
+--- a/public/manifest.json
++++ b/public/manifest.json
+@@ -1,17 +1,16 @@
+ {
+-  "name": "Dice",
+-  "version": "2.0.0",
++  "name": "Dice (couleurs)",
++  "version": "2.0.0-color.1",
+   "manifest_version": 1,
+-  "author": "Owlbear Rodeo",
+-  "homepage_url": "https://extensions.owlbear.rodeo/dice",
+-  "icon": "/logo.png",
+-  "description": "Beautiful 3D dice extension for d20 based systems",
++  "author": "4H2C Studios (fork d'Owlbear Rodeo Dice)",
++  "icon": "/obr-dice-couleurs/logo.png",
++  "description": "Fork du lanceur 3D officiel avec une couleur par dé",
+   "action": {
+-    "title": "Dice",
+-    "icon": "/icon.svg",
+-    "popover": "/",
++    "title": "Dice (couleurs)",
++    "icon": "/obr-dice-couleurs/icon.svg",
++    "popover": "/obr-dice-couleurs/",
+     "height": 700,
+     "width": 375
+   },
+-  "background_url": "/background.html"
+-}
++  "background_url": "/obr-dice-couleurs/background.html"
++}
+\ No newline at end of file
+diff --git a/src/background.ts b/src/background.ts
+index a323eca..c6acffc 100644
+--- a/src/background.ts
++++ b/src/background.ts
+@@ -4,7 +4,7 @@ import { getPluginId } from "./plugin/getPluginId";
+ OBR.onReady(() => {
+   OBR.popover.open({
+     id: getPluginId("popover"),
+-    url: "/popover.html",
++    url: "/obr-dice-couleurs/popover.html",
+     width: 0,
+     height: 0,
+     anchorOrigin: { horizontal: "RIGHT", vertical: "BOTTOM" },
+diff --git a/src/controls/DiceColorPicker.tsx b/src/controls/DiceColorPicker.tsx
+new file mode 100644
+index 0000000..cec8a02
+--- /dev/null
++++ b/src/controls/DiceColorPicker.tsx
+@@ -0,0 +1,123 @@
++import { useState } from "react";
++import IconButton from "@mui/material/IconButton";
++import Popover from "@mui/material/Popover";
++import Stack from "@mui/material/Stack";
++import Tooltip from "@mui/material/Tooltip";
++import Typography from "@mui/material/Typography";
++
++import { useDiceControlsStore } from "./store";
++
++const PALETTE = [
++  "#e53935", // rouge
++  "#fb8c00", // orange
++  "#fdd835", // jaune
++  "#43a047", // vert
++  "#00acc1", // cyan
++  "#1e88e5", // bleu
++  "#8e24aa", // violet
++  "#d81b60", // rose
++  "#ffffff", // blanc
++  "#424242", // noir
++];
++
++function Swatch({
++  color,
++  selected,
++  onClick,
++}: {
++  color: string | null;
++  selected: boolean;
++  onClick: () => void;
++}) {
++  return (
++    <div
++      onClick={onClick}
++      style={{
++        width: 24,
++        height: 24,
++        borderRadius: "50%",
++        cursor: "pointer",
++        boxSizing: "border-box",
++        backgroundColor: color ?? "transparent",
++        border: `2px solid ${selected ? "#bb99ff" : "rgba(255,255,255,0.3)"}`,
++        backgroundImage: color
++          ? undefined
++          : "linear-gradient(135deg, transparent 45%, #e53935 45%, #e53935 55%, transparent 55%)",
++      }}
++    />
++  );
++}
++
++export function DiceColorPicker() {
++  const diceColor = useDiceControlsStore((state) => state.diceColor);
++  const setDiceColor = useDiceControlsStore((state) => state.setDiceColor);
++  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
++
++  return (
++    <>
++      <Tooltip title="Couleur des dés" placement="right">
++        <IconButton onClick={(e) => setAnchor(e.currentTarget)}>
++          <div
++            style={{
++              width: 22,
++              height: 22,
++              borderRadius: "50%",
++              boxSizing: "border-box",
++              border: "2px solid currentColor",
++              background:
++                diceColor ??
++                "conic-gradient(#e53935, #fdd835, #43a047, #1e88e5, #8e24aa, #e53935)",
++            }}
++          />
++        </IconButton>
++      </Tooltip>
++      <Popover
++        open={Boolean(anchor)}
++        anchorEl={anchor}
++        onClose={() => setAnchor(null)}
++        anchorOrigin={{ vertical: "center", horizontal: "right" }}
++        transformOrigin={{ vertical: "center", horizontal: "left" }}
++      >
++        <Stack p={1.5} gap={1}>
++          <Typography variant="caption">Couleur des prochains dés</Typography>
++          <div
++            style={{
++              display: "grid",
++              gridTemplateColumns: "repeat(4, 24px)",
++              gap: 8,
++            }}
++          >
++            <Swatch
++              color={null}
++              selected={diceColor === null}
++              onClick={() => setDiceColor(null)}
++            />
++            {PALETTE.map((c) => (
++              <Swatch
++                key={c}
++                color={c}
++                selected={diceColor === c}
++                onClick={() => setDiceColor(c)}
++              />
++            ))}
++            <Tooltip title="Couleur personnalisée">
++              <input
++                type="color"
++                value={diceColor ?? "#ffffff"}
++                onChange={(e) => setDiceColor(e.target.value)}
++                style={{
++                  width: 24,
++                  height: 24,
++                  padding: 0,
++                  border: "none",
++                  background: "transparent",
++                  cursor: "pointer",
++                }}
++              />
++            </Tooltip>
++          </div>
++        </Stack>
++      </Popover>
++    </>
++  );
++}
+diff --git a/src/controls/DiceHistory.tsx b/src/controls/DiceHistory.tsx
+index 9fa49d4..232239c 100644
+--- a/src/controls/DiceHistory.tsx
++++ b/src/controls/DiceHistory.tsx
+@@ -128,6 +128,7 @@ function RecentRollChip({
+                 <DicePreview
+                   diceStyle={die.style}
+                   diceType={die.type}
++                  color={die.color}
+                   size="small"
+                 />
+               </Stack>
+diff --git a/src/controls/DicePicker.tsx b/src/controls/DicePicker.tsx
+index 8c81600..cc96b6e 100644
+--- a/src/controls/DicePicker.tsx
++++ b/src/controls/DicePicker.tsx
+@@ -6,11 +6,22 @@ import { DicePreview } from "../previews/DicePreview";
+ import { useDiceControlsStore } from "./store";
+ import { useDiceRollStore } from "../dice/store";
+ 
++const badgeSx = {
++  ".MuiBadge-badge": {
++    bgcolor: "background.default",
++    backgroundImage:
++      "linear-gradient(rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.30))",
++    pointerEvents: "none",
++  },
++};
++
+ export function DicePicker() {
+   const counts = useDiceControlsStore((state) => state.diceCounts);
+-
+   const diceById = useDiceControlsStore((state) => state.diceById);
+-  const handleDiceCountIncrease = useDiceControlsStore(
++  const diceSet = useDiceControlsStore((state) => state.diceSet);
++  const diceColor = useDiceControlsStore((state) => state.diceColor);
++  const addDie = useDiceControlsStore((state) => state.addDie);
++  const incrementDieCount = useDiceControlsStore(
+     (state) => state.incrementDieCount
+   );
+   const clearRoll = useDiceRollStore((state) => state.clearRoll);
+@@ -21,35 +32,52 @@ export function DicePicker() {
+     }
+   }
+ 
++  // Coloured dice already in the tray (shown under the base dice)
++  const colouredEntries = Object.entries(counts).filter(
++    ([id, count]) => count > 0 && diceById[id]?.color
++  );
++
+   return (
+     <>
+-      {Object.entries(counts).map(([id, count]) => {
+-        const die = diceById[id];
+-        if (!die) {
+-          return null;
+-        }
+-        return (
+-          <Badge
+-            badgeContent={count}
+-            sx={{
+-              ".MuiBadge-badge": {
+-                bgcolor: "background.default",
+-                backgroundImage:
+-                  "linear-gradient(rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.30))",
+-                pointerEvents: "none",
+-              },
++      {diceSet.dice.map((die) => (
++        <Badge
++          badgeContent={counts[die.id]}
++          sx={badgeSx}
++          overlap="circular"
++          key={die.id}
++        >
++          <IconButton
++            onClick={() => {
++              addDie(die.id);
++              clearRollIfNeeded();
+             }}
+-            overlap="circular"
+-            key={id}
++            sx={{ p: 0 }}
+           >
++            <DicePreview
++              diceStyle={die.style}
++              diceType={die.type}
++              color={diceColor ?? undefined}
++            />
++          </IconButton>
++        </Badge>
++      ))}
++      {colouredEntries.map(([id, count]) => {
++        const die = diceById[id];
++        return (
++          <Badge badgeContent={count} sx={badgeSx} overlap="circular" key={id}>
+             <IconButton
+               onClick={() => {
+-                handleDiceCountIncrease(id);
++                incrementDieCount(id);
+                 clearRollIfNeeded();
+               }}
+               sx={{ p: 0 }}
+             >
+-              <DicePreview diceStyle={die.style} diceType={die.type} />
++              <DicePreview
++                diceStyle={die.style}
++                diceType={die.type}
++                color={die.color}
++                size="small"
++              />
+             </IconButton>
+           </Badge>
+         );
+diff --git a/src/controls/DieMenu.tsx b/src/controls/DieMenu.tsx
+index 3fa92ea..224ab2f 100644
+--- a/src/controls/DieMenu.tsx
++++ b/src/controls/DieMenu.tsx
+@@ -27,7 +27,8 @@ export function DieMenu({ die, onClose }: { die: Die; onClose: () => void }) {
+                 .toLowerCase()} ${die.type}`}
+             >
+               <div style={{ display: "flex" }}>
+-                <DicePreview diceStyle={die.style} diceType={die.type} />
++                <DicePreview diceStyle={die.style} diceType={die.type}
++                  color={die.color} />
+               </div>
+             </Tooltip>
+             <Typography variant="h6">{value}</Typography>
+diff --git a/src/controls/Sidebar.tsx b/src/controls/Sidebar.tsx
+index eabf449..d328ffc 100644
+--- a/src/controls/Sidebar.tsx
++++ b/src/controls/Sidebar.tsx
+@@ -4,6 +4,7 @@ import Divider from "@mui/material/Divider";
+ 
+ import { DiceSetPicker } from "./DiceSetPicker";
+ import { DicePicker } from "./DicePicker";
++import { DiceColorPicker } from "./DiceColorPicker";
+ import { DiceExtras } from "./DiceExtras";
+ import { DiceHidden } from "./DiceHidden";
+ import { DiceHistory } from "./DiceHistory";
+@@ -27,6 +28,7 @@ export function Sidebar() {
+     >
+       <Stack p={1} gap={1} alignItems="center">
+         <DiceSetPicker />
++        <DiceColorPicker />
+         <Divider flexItem sx={{ mx: 1 }} />
+         <DicePicker />
+         <Divider flexItem sx={{ mx: 1 }} />
+diff --git a/src/controls/store.ts b/src/controls/store.ts
+index 0f1dbeb..b149b55 100644
+--- a/src/controls/store.ts
++++ b/src/controls/store.ts
+@@ -19,6 +19,11 @@ interface DiceControlsState {
+   diceHidden: boolean;
+   diceRollPressTime: number | null;
+   fairnessTesterOpen: boolean;
++  /** Colour applied to dice added to the tray (null = original colour) */
++  diceColor: string | null;
++  setDiceColor: (color: string | null) => void;
++  /** Add a die from the current set, using the selected colour */
++  addDie: (baseId: string) => void;
+   changeDiceSet: (diceSet: DiceSet) => void;
+   resetDiceCounts: () => void;
+   changeDieCount: (id: string, count: number) => void;
+@@ -46,6 +51,32 @@ export const useDiceControlsStore = create<DiceControlsState>()(
+     diceHidden: false,
+     diceRollPressTime: null,
+     fairnessTesterOpen: false,
++    diceColor: null,
++    setDiceColor(color) {
++      set((state) => {
++        state.diceColor = color;
++      });
++    },
++    addDie(baseId) {
++      set((state) => {
++        const color = state.diceColor;
++        if (!color) {
++          if (baseId in state.diceCounts) {
++            state.diceCounts[baseId] += 1;
++          }
++          return;
++        }
++        const base = state.diceById[baseId];
++        if (!base) {
++          return;
++        }
++        const id = `${baseId}@${color}`;
++        if (!(id in state.diceById)) {
++          state.diceById[id] = { ...base, id, color };
++        }
++        state.diceCounts[id] = (state.diceCounts[id] || 0) + 1;
++      });
++    },
+     changeDiceSet(diceSet) {
+       set((state) => {
+         const counts: DiceCounts = {};
+@@ -150,19 +181,19 @@ export function getDiceToRoll(
+     if (!die) {
+       continue;
+     }
+-    const { style, type } = die;
++    const { style, type, color } = die;
+     for (let i = 0; i < count; i++) {
+       if (advantage === null) {
+         if (type === "D100") {
+           // Push a d100 and d10 when rolling a d100
+           dice.push({
+             dice: [
+-              { id: generateDiceId(), style, type: "D100" },
+-              { id: generateDiceId(), style, type: "D10" },
++              { id: generateDiceId(), style, type: "D100", color },
++              { id: generateDiceId(), style, type: "D10", color },
+             ],
+           });
+         } else {
+-          dice.push({ id: generateDiceId(), style, type });
++          dice.push({ id: generateDiceId(), style, type, color });
+         }
+       } else {
+         // Rolling with advantage or disadvantage
+@@ -173,14 +204,14 @@ export function getDiceToRoll(
+             dice: [
+               {
+                 dice: [
+-                  { id: generateDiceId(), style, type: "D100" },
+-                  { id: generateDiceId(), style, type: "D10" },
++                  { id: generateDiceId(), style, type: "D100", color },
++                  { id: generateDiceId(), style, type: "D10", color },
+                 ],
+               },
+               {
+                 dice: [
+-                  { id: generateDiceId(), style, type: "D100" },
+-                  { id: generateDiceId(), style, type: "D10" },
++                  { id: generateDiceId(), style, type: "D100", color },
++                  { id: generateDiceId(), style, type: "D10", color },
+                 ],
+               },
+             ],
+@@ -189,8 +220,8 @@ export function getDiceToRoll(
+         } else {
+           dice.push({
+             dice: [
+-              { id: generateDiceId(), style, type },
+-              { id: generateDiceId(), style, type },
++              { id: generateDiceId(), style, type, color },
++              { id: generateDiceId(), style, type, color },
+             ],
+             combination,
+           });
+diff --git a/src/dice/Dice.tsx b/src/dice/Dice.tsx
+index 92cf370..40e31f3 100644
+--- a/src/dice/Dice.tsx
++++ b/src/dice/Dice.tsx
+@@ -15,7 +15,7 @@ export const Dice = React.forwardRef<THREE.Group, DiceProps>(
+         sharp={die.style === "WALNUT"}
+         ref={ref}
+       >
+-        <DiceMaterial diceStyle={die.style} />
++        <DiceMaterial diceStyle={die.style} color={die.color} />
+         {children}
+       </DiceMesh>
+     );
+diff --git a/src/dice/PreviewDiceRoll.tsx b/src/dice/PreviewDiceRoll.tsx
+index c8f4519..e0bc679 100644
+--- a/src/dice/PreviewDiceRoll.tsx
++++ b/src/dice/PreviewDiceRoll.tsx
+@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
+ import { useFrame, useThree } from "@react-three/fiber";
+ 
+ import { getDiceToRoll, useDiceControlsStore } from "../controls/store";
+-import { DiceType } from "../types/DiceType";
+ import { getDieFromDice } from "../helpers/getDieFromDice";
+ import { DiceRoll } from "../types/DiceRoll";
+ import { Dice } from "./Dice";
+@@ -33,8 +32,8 @@ export function PreviewDiceRoll() {
+   const [diceThrower] = useState(() => new DiceThrower());
+   const isDefault = useMemo(
+     () =>
+-      Object.entries(defaultDiceCounts).every(
+-        ([type, count]) => counts[type as DiceType] === count
++      Object.entries(counts).every(
++        ([id, count]) => (defaultDiceCounts[id] ?? 0) === count
+       ),
+     [counts, defaultDiceCounts]
+   );
+diff --git a/src/materials/DiceMaterial.tsx b/src/materials/DiceMaterial.tsx
+index c9af347..8063a71 100644
+--- a/src/materials/DiceMaterial.tsx
++++ b/src/materials/DiceMaterial.tsx
+@@ -8,24 +8,31 @@ import { SunriseMaterial } from "./sunrise/SunriseMaterial";
+ import { SunsetMaterial } from "./sunset/SunsetMaterial";
+ import { WalnutMaterial } from "./walnut/WalnutMaterial";
+ 
+-export function DiceMaterial({ diceStyle }: { diceStyle: DiceStyle }) {
++export function DiceMaterial({
++  diceStyle,
++  color,
++}: {
++  diceStyle: DiceStyle;
++  color?: string;
++}) {
++  const props = color ? { color } : {};
+   switch (diceStyle) {
+     case "GALAXY":
+-      return <GalaxyMaterial />;
++      return <GalaxyMaterial {...props} />;
+     case "GEMSTONE":
+-      return <GemstoneMaterial />;
++      return <GemstoneMaterial {...props} />;
+     case "GLASS":
+-      return <GlassMaterial />;
++      return <GlassMaterial {...props} />;
+     case "IRON":
+-      return <IronMaterial />;
++      return <IronMaterial {...props} />;
+     case "NEBULA":
+-      return <NebulaMaterial />;
++      return <NebulaMaterial {...props} />;
+     case "SUNRISE":
+-      return <SunriseMaterial />;
++      return <SunriseMaterial {...props} />;
+     case "SUNSET":
+-      return <SunsetMaterial />;
++      return <SunsetMaterial {...props} />;
+     case "WALNUT":
+-      return <WalnutMaterial />;
++      return <WalnutMaterial {...props} />;
+     default:
+       throw Error(`Dice style ${diceStyle} error: not implemented`);
+   }
+diff --git a/src/plugin/getPluginId.ts b/src/plugin/getPluginId.ts
+index a50698e..bc6fb61 100644
+--- a/src/plugin/getPluginId.ts
++++ b/src/plugin/getPluginId.ts
+@@ -1,4 +1,4 @@
+ /** Get the reverse domain name id for this plugin at a given path */
+ export function getPluginId(path: string) {
+-  return `rodeo.owlbear.dice/${path}`;
++  return `com.4h2cstudios.colordice/${path}`;
+ }
+diff --git a/src/previews/DicePreview.tsx b/src/previews/DicePreview.tsx
+index 8d832b6..0fdcb66 100644
+--- a/src/previews/DicePreview.tsx
++++ b/src/previews/DicePreview.tsx
+@@ -38,14 +38,29 @@ type DiePreviewProps = {
+   diceType: DiceType;
+   diceStyle: DiceStyle;
+   size?: "small" | "medium" | "large";
++  color?: string;
+ };
+ 
+-export function DicePreview({ diceType, diceStyle, size }: DiePreviewProps) {
++export function DicePreview({
++  diceType,
++  diceStyle,
++  size,
++  color,
++}: DiePreviewProps) {
+   return (
+     <PreviewImage
+       src={previews[diceStyle][diceType]}
+       alt={`${diceStyle} ${diceType} preview`}
+       size={size}
++      style={
++        color
++          ? {
++              borderRadius: "50%",
++              boxShadow: `0 0 0 2px ${color}`,
++              backgroundColor: `${color}55`,
++            }
++          : undefined
++      }
+     />
+   );
+ }
+diff --git a/src/types/Die.ts b/src/types/Die.ts
+index e3ef2ff..5a3b3d8 100644
+--- a/src/types/Die.ts
++++ b/src/types/Die.ts
+@@ -7,6 +7,8 @@ export interface Die {
+   id: string;
+   style: DiceStyle;
+   type: DiceType;
++  /** Optional tint colour (CSS hex) used to tell dice apart */
++  color?: string;
+ }
+ 
+ export function isDie(value: any): value is Die {
+diff --git a/vite.config.ts b/vite.config.ts
+index d818303..f2bf5e1 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -7,6 +7,8 @@ declare var __dirname: string;
+ 
+ // https://vitejs.dev/config/
+ export default defineConfig({
++  base: "/obr-dice-couleurs/",
++  server: { cors: { origin: "https://www.owlbear.rodeo" } },
+   plugins: [react()],
+   assetsInclude: ["**/*.glb", "**/*.hdr"],
+   build: {
