@@ -26,7 +26,7 @@ jobs:
           git clone https://github.com/owlbear-rodeo/dice.git upstream
           cd upstream
           git checkout ccc32beceee0888c0a48129fbb23f4a636c710ee
-          git apply --recount --ignore-whitespace ../overlay/dice-couleurs.patch
+          git apply --recount --ignore-whitespace ../overlay/dice-couleurs.patch ../overlay/02-fix-lancer-des-colores.patch
       - uses: actions/setup-node@v4
         with:
           node-version: 20
