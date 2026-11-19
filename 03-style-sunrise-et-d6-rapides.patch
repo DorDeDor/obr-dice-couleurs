@@ -87,7 +87,7 @@ index b149b55..2ea4dff 100644
  
 -const initialSet = diceSets[0];
 +const initialSet =
-+  diceSets.find((set) => set.id === "SUNRISE_STANDARD") || diceSets[0];
++  diceSets.find((set) => set.id === "IRON_STANDARD") || diceSets[0];
  const initialDiceCounts = getDiceCountsFromSet(initialSet);
  const initialDiceById = getDiceByIdFromSet(initialSet);
  
