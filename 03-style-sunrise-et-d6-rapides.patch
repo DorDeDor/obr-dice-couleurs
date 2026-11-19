@@ -1,0 +1,105 @@
+diff --git a/src/controls/QuickDice.tsx b/src/controls/QuickDice.tsx
+new file mode 100644
+index 0000000..da60158
+--- /dev/null
++++ b/src/controls/QuickDice.tsx
+@@ -0,0 +1,44 @@
++import IconButton from "@mui/material/IconButton";
++import Tooltip from "@mui/material/Tooltip";
++
++import { DicePreview } from "../previews/DicePreview";
++import { useDiceControlsStore } from "./store";
++import { useDiceRollStore } from "../dice/store";
++
++/** One-click coloured dice, always available above the colour picker */
++const QUICK_DICE = [
++  { label: "D6 rouge", color: "#e53935" },
++  { label: "D6 jaune", color: "#fdd835" },
++];
++
++export function QuickDice() {
++  const diceSet = useDiceControlsStore((state) => state.diceSet);
++  const addDie = useDiceControlsStore((state) => state.addDie);
++  const clearRoll = useDiceRollStore((state) => state.clearRoll);
++  const roll = useDiceRollStore((state) => state.roll);
++
++  const d6 = diceSet.dice.find((die) => die.type === "D6");
++  if (!d6) {
++    return null;
++  }
++
++  return (
++    <>
++      {QUICK_DICE.map(({ label, color }) => (
++        <Tooltip key={color} title={`Ajouter un ${label}`} placement="right">
++          <IconButton
++            sx={{ p: 0 }}
++            onClick={() => {
++              addDie(d6.id, color);
++              if (roll) {
++                clearRoll();
++              }
++            }}
++          >
++            <DicePreview diceStyle={d6.style} diceType="D6" color={color} />
++          </IconButton>
++        </Tooltip>
++      ))}
++    </>
++  );
++}
+diff --git a/src/controls/Sidebar.tsx b/src/controls/Sidebar.tsx
+index d328ffc..d334e74 100644
+--- a/src/controls/Sidebar.tsx
++++ b/src/controls/Sidebar.tsx
+@@ -5,6 +5,7 @@ import Divider from "@mui/material/Divider";
+ import { DiceSetPicker } from "./DiceSetPicker";
+ import { DicePicker } from "./DicePicker";
+ import { DiceColorPicker } from "./DiceColorPicker";
++import { QuickDice } from "./QuickDice";
+ import { DiceExtras } from "./DiceExtras";
+ import { DiceHidden } from "./DiceHidden";
+ import { DiceHistory } from "./DiceHistory";
+@@ -28,6 +29,7 @@ export function Sidebar() {
+     >
+       <Stack p={1} gap={1} alignItems="center">
+         <DiceSetPicker />
++        <QuickDice />
+         <DiceColorPicker />
+         <Divider flexItem sx={{ mx: 1 }} />
+         <DicePicker />
+diff --git a/src/controls/store.ts b/src/controls/store.ts
+index b149b55..2ea4dff 100644
+--- a/src/controls/store.ts
++++ b/src/controls/store.ts
+@@ -23,7 +23,7 @@ interface DiceControlsState {
+   diceColor: string | null;
+   setDiceColor: (color: string | null) => void;
+   /** Add a die from the current set, using the selected colour */
+-  addDie: (baseId: string) => void;
++  addDie: (baseId: string, colorOverride?: string) => void;
+   changeDiceSet: (diceSet: DiceSet) => void;
+   resetDiceCounts: () => void;
+   changeDieCount: (id: string, count: number) => void;
+@@ -36,7 +36,8 @@ interface DiceControlsState {
+   toggleFairnessTester: () => void;
+ }
+ 
+-const initialSet = diceSets[0];
++const initialSet =
++  diceSets.find((set) => set.id === "SUNRISE_STANDARD") || diceSets[0];
+ const initialDiceCounts = getDiceCountsFromSet(initialSet);
+ const initialDiceById = getDiceByIdFromSet(initialSet);
+ 
+@@ -57,9 +58,9 @@ export const useDiceControlsStore = create<DiceControlsState>()(
+         state.diceColor = color;
+       });
+     },
+-    addDie(baseId) {
++    addDie(baseId, colorOverride) {
+       set((state) => {
+-        const color = state.diceColor;
++        const color = colorOverride ?? state.diceColor;
+         if (!color) {
+           if (baseId in state.diceCounts) {
+             state.diceCounts[baseId] += 1;
